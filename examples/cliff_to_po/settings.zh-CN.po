@@ -1,0 +1,23 @@
+msgid ""
+msgstr ""
+"Language: zh-CN\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#. Video settings screen.
+#. cliff:type: label
+#. cliff:emotion: objective
+#. cliff:status: final
+#. cliff:max-width: 12
+msgctxt "video.resolution"
+msgid "Resolution"
+msgstr "分辨率"
+
+#. Video settings screen. Toggle label.
+#. cliff:type: label
+#. cliff:emotion: objective
+#. cliff:status: reviewed
+#. cliff:max-width: 12
+msgctxt "video.fullscreen"
+msgid "Fullscreen"
+msgstr "全屏"
+

@@ -3,14 +3,14 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "clif-python"
+name = "cliff-python"
 version = "0.1.0"
-description = "Official Python parser, serializer, validator and converter for CLIF 1.0 (import name: clif_format)"
+description = "Official Python parser, serializer, validator and converter for CLIFF 1.0 (import name: cliff_format)"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
-authors = [{ name = "CLIF contributors" }]
-keywords = ["localization", "i18n", "l10n", "clif", "translation", "parser"]
+authors = [{ name = "CLIFF contributors" }]
+keywords = ["localization", "i18n", "l10n", "cliff", "translation", "parser"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -38,13 +38,13 @@ converters = [
 ]
 
 [project.scripts]
-clif = "clif_format.cli:main"
+cliff = "cliff_format.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-clif_format = ["py.typed"]
+cliff_format = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -59,12 +59,12 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.mypy]
 python_version = "3.11"
-files = ["src/clif_format"]
+files = ["src/cliff_format"]
 ignore_missing_imports = true
 warn_unused_ignores = true
 warn_redundant_casts = true
 no_implicit_optional = true
 
 [project.urls]
-Repository = "https://github.com/clif-format/clif-python"
-Issues = "https://github.com/clif-format/clif-python/issues"
+Repository = "https://github.com/cliff-format/cliff-python"
+Issues = "https://github.com/cliff-format/cliff-python/issues"

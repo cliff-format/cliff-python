@@ -1,4 +1,4 @@
-"""Regression tests for the normative rules of CLIF 1.0."""
+"""Regression tests for the normative rules of CLIFF 1.0."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from clif_format import (
+from cliff_format import (
     Entry,
     Group,
     effective_context,
@@ -17,11 +17,11 @@ from clif_format import (
     serialize,
     validate,
 )
-from clif_format.errors import ClifParseError
-from clif_format.validator import _display_cells
+from cliff_format.errors import CliffParseError
+from cliff_format.validator import _display_cells
 
 HEADER = (
-    "CLIF 1.0\n"
+    "CLIFF 1.0\n"
     "namespace: demo\n"
     "clan: settings\n"
     "source-language: en-US\n"
@@ -47,7 +47,7 @@ def errors_of(text: str, **kwargs: object) -> list[str]:
 )
 def test_list_fields_reject_bare_scalars(field: str) -> None:
     text = document('source: "Resolution"\nstatus: initial\n', field)
-    with pytest.raises(ClifParseError, match="list-typed field"):
+    with pytest.raises(CliffParseError, match="list-typed field"):
         parse(text)
 
 
@@ -73,7 +73,7 @@ def test_list_items_may_contain_apostrophes() -> None:
 
 def test_lists_never_nest() -> None:
     text = document('source: "R"\nstatus: initial\nreference: [["a"]]\n')
-    with pytest.raises(ClifParseError, match="nested lists"):
+    with pytest.raises(CliffParseError, match="nested lists"):
         parse(text)
 
 
@@ -81,7 +81,7 @@ def test_lists_never_nest() -> None:
 
 
 def test_quoted_tag_is_rejected() -> None:
-    with pytest.raises(ClifParseError, match="unquoted"):
+    with pytest.raises(CliffParseError, match="unquoted"):
         parse(document('source: "R"\nstatus: "initial"\n'))
 
 
@@ -100,15 +100,15 @@ def test_adjacent_string_continuation_concatenates_verbatim() -> None:
 def test_bare_list_continuation_extends_the_list() -> None:
     text = (
         HEADER
-        + 'dependency: ["a.clif"]\n            ["b.md", "c.md"]\n'
+        + 'dependency: ["a.cliff"]\n            ["b.md", "c.md"]\n'
         + '\n[video]\ntype: label\n\n<a>\nsource: "S"\nstatus: initial\n'
     )
-    assert parse(text).header.dependency == ["a.clif", "b.md", "c.md"]
+    assert parse(text).header.dependency == ["a.cliff", "b.md", "c.md"]
 
 
 def test_blank_line_ends_a_continuation() -> None:
     text = HEADER + '\n[video]\ntype: label\n\n<a>\nsource: "S"\n\n"orphan"\n'
-    with pytest.raises(ClifParseError, match="key"):
+    with pytest.raises(CliffParseError, match="key"):
         parse(text)
 
 
@@ -118,7 +118,7 @@ def test_blank_line_ends_a_continuation() -> None:
 def test_tolerant_input_is_accepted() -> None:
     """BOM, CRLF, equals separators, single quotes and stray whitespace."""
     text = (
-        "\ufeffCLIF 1.0\r\n"
+        "\ufeffCLIFF 1.0\r\n"
         "namespace = demo\r\n"
         "  clan:settings\r\n"
         "source-language: en-US\r\n"
@@ -139,8 +139,8 @@ def test_tolerant_input_is_accepted() -> None:
 
 
 def test_bare_carriage_return_is_rejected() -> None:
-    with pytest.raises(ClifParseError, match="bare CR"):
-        parse("CLIF 1.0\rnamespace: demo\n")
+    with pytest.raises(CliffParseError, match="bare CR"):
+        parse("CLIFF 1.0\rnamespace: demo\n")
 
 
 # Specification 9 - group inheritance
@@ -180,26 +180,26 @@ def test_duplicate_entry_id_reports_both_occurrences() -> None:
 
 def test_flat_layout_mismatch_is_reported(tmp_path_factory: pytest.TempPathFactory) -> None:
     text = document('source: "R"\nstatus: initial\n')
-    assert errors_of(text, path=Path("settings.zh-CN.clif")) == []
+    assert errors_of(text, path=Path("settings.zh-CN.cliff")) == []
     assert any(
         "flat layout mismatch" in m
-        for m in errors_of(text, path=Path("other.zh-CN.clif"))
+        for m in errors_of(text, path=Path("other.zh-CN.cliff"))
     )
 
 
 def test_folder_layout_mismatch_is_reported() -> None:
     text = document('source: "R"\nstatus: initial\n')
-    assert errors_of(text, path=Path("zh-CN/settings.clif")) == []
+    assert errors_of(text, path=Path("zh-CN/settings.cliff")) == []
     assert any(
         "folder layout mismatch" in m
-        for m in errors_of(text, path=Path("ja-JP/settings.clif"))
+        for m in errors_of(text, path=Path("ja-JP/settings.cliff"))
     )
 
 
 def test_word_like_directories_are_not_language_tags() -> None:
     """A generated file in a plain directory simply skips the layout check."""
     text = document('source: "R"\nstatus: initial\n')
-    assert errors_of(text, path=Path("fixtures/corpus.clif")) == []
+    assert errors_of(text, path=Path("fixtures/corpus.cliff")) == []
 
 
 # Specification 15 - display width
@@ -253,7 +253,7 @@ def test_extension_fields_warn_and_round_trip_verbatim() -> None:
 
 
 def test_unknown_non_extension_key_is_an_error() -> None:
-    with pytest.raises(ClifParseError, match="unknown header key"):
+    with pytest.raises(CliffParseError, match="unknown header key"):
         parse(HEADER + 'nickname: "x"\n')
 
 
@@ -286,7 +286,7 @@ def test_unbalanced_icu_braces_are_reported() -> None:
 )
 def test_value_errors_carry_a_line_number_and_the_offending_text(body: str) -> None:
     text = document(body)
-    with pytest.raises(ClifParseError) as excinfo:
+    with pytest.raises(CliffParseError) as excinfo:
         parse(text)
     assert excinfo.value.line > 0
     assert excinfo.value.text

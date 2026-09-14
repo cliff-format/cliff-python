@@ -1,0 +1,13 @@
+CLIFF 1.0
+namespace: demo
+clan: minimal
+source-language: en-US
+target-language: zh-CN
+
+[video]
+type: label
+
+<resolution>
+source: "Resolution"
+target: "分辨率"
+status: final

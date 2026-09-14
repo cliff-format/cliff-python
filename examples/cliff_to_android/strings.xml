@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--Video settings screen.
+cliff:source: Resolution
+cliff:type: label
+cliff:emotion: objective
+cliff:status: final
+cliff:max-width: 12-->
+    <string name="resolution">分辨率</string>
+    <!--Video settings screen. Toggle label.
+cliff:source: Fullscreen
+cliff:type: label
+cliff:emotion: objective
+cliff:status: reviewed
+cliff:max-width: 12-->
+    <string name="fullscreen">全屏</string>
+</resources>

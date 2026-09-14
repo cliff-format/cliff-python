@@ -1,38 +1,38 @@
-# clif_format
+# cliff_format
 
-Official Python implementation for [CLIF 1.0](https://github.com/clif-format/clif) — the Contextual Localization Integrated Format.
+Official Python implementation for [CLIFF 1.0](https://github.com/cliff-format/cliff) — the Contextual Localization Integrated File Format.
 
-`clif_format` provides the core pieces needed by a Python localization toolchain:
+`cliff_format` provides the core pieces needed by a Python localization toolchain:
 
-- **Parser** — read CLIF text/files into a typed Python data model.
-- **Serializer** — write the data model back as canonical CLIF.
+- **Parser** — read CLIFF text/files into a typed Python data model.
+- **Serializer** — write the data model back as canonical CLIFF.
 - **Validator** — check required fields, fixed vocabularies, status rules, duplicate IDs, ICU brace balance, file layout, and rendered display width.
 - **Converter** — bidirectional conversions for JSON, YAML, CSV, PO, XLIFF, Fluent, Android strings.xml, iOS Localizable.strings.
 
 ## Status
 
-The parser, serializer, validator, and converters target CLIF 1.0 and are checked against the normative specification examples and the `clif-test` conformance fixtures (both the valid and the invalid ones).
+The parser, serializer, validator, and converters target CLIFF 1.0 and are checked against the normative specification examples and the `cliff-test` conformance fixtures (both the valid and the invalid ones).
 
 ## Installation
 
 ```bash
-pip install clif-python
+pip install cliff-python
 ```
 
 For development:
 
 ```bash
-git clone https://github.com/clif-format/clif-python.git
-cd clif-python
+git clone https://github.com/cliff-format/cliff-python.git
+cd cliff-python
 pip install -e ".[dev]"
 ```
 
 ## Quick start
 
 ```python
-import clif_format
+import cliff_format
 
-text = '''CLIF 1.0
+text = '''CLIFF 1.0
 namespace: demo
 clan: settings
 source-language: en-US
@@ -47,15 +47,15 @@ target: "分辨率"
 status: final
 '''
 
-doc = clif_format.parse(text)
+doc = cliff_format.parse(text)
 print(doc.header.namespace)          # demo
 print(doc.groups[0].path)            # video
 print(doc.groups[0].entries[0].id)   # resolution
 print(doc.groups[0].entries[0].target)
 
-print(clif_format.serialize(doc))
+print(cliff_format.serialize(doc))
 
-issues = clif_format.validate(text)
+issues = cliff_format.validate(text)
 for issue in issues:
     print(issue.line, issue.category, issue.message)
 ```
@@ -63,15 +63,15 @@ for issue in issues:
 ## Command line
 
 ```bash
-clif_format parse path/to/file.clif
-clif_format serialize path/to/file.clif
-clif_format validate path/to/file.clif
-clif_format convert path/to/file.clif --format po
-clif_format convert path/to/file.po --from po --format clif
-clif_format convert path/to/terms.clif --format xliff --xliff-version 2.2
+cliff_format parse path/to/file.cliff
+cliff_format serialize path/to/file.cliff
+cliff_format validate path/to/file.cliff
+cliff_format convert path/to/file.cliff --format po
+cliff_format convert path/to/file.po --from po --format cliff
+cliff_format convert path/to/terms.cliff --format xliff --xliff-version 2.2
 ```
 
-Supported convert formats: `clif`, `json`, `yaml`, `csv`, `po`, `xliff`, `fluent`, `android`, `ios`.
+Supported convert formats: `cliff`, `json`, `yaml`, `csv`, `po`, `xliff`, `fluent`, `android`, `ios`.
 
 `validate` exits `1` when the file has errors and `0` when it only has warnings or extension notes. Every diagnostic carries a line number, a category, and the offending line.
 
@@ -79,14 +79,14 @@ Supported convert formats: `clif`, `json`, `yaml`, `csv`, `po`, `xliff`, `fluent
 
 | Function | Description |
 | --- | --- |
-| `clif_format.parse(text, path=None)` | Parse CLIF text into `ClifDocument`. |
-| `clif_format.load(path)` | Read and parse a `.clif` file. |
-| `clif_format.serialize(doc)` | Serialize a `ClifDocument` to canonical CLIF text. |
-| `clif_format.validate(text, check_width=False)` | Validate CLIF text and return `list[ValidationIssue]`. |
-| `clif_format.validate_document(doc, check_width=False)` | Validate an already parsed document. |
-| `clif_format.effective_context / effective_type / effective_emotion / effective_max_width` | Resolve a group-inherited value for one entry. |
-| `clif_format.to_dict(doc)` / `clif_format.from_dict(data)` | Convert between `ClifDocument` and a JSON-shaped dict. |
-| `clif_format.to_json(doc)` / `clif_format.from_json(text)` | Convert between `ClifDocument` and JSON text. |
+| `cliff_format.parse(text, path=None)` | Parse CLIFF text into `CliffDocument`. |
+| `cliff_format.load(path)` | Read and parse a `.cliff` file. |
+| `cliff_format.serialize(doc)` | Serialize a `CliffDocument` to canonical CLIFF text. |
+| `cliff_format.validate(text, check_width=False)` | Validate CLIFF text and return `list[ValidationIssue]`. |
+| `cliff_format.validate_document(doc, check_width=False)` | Validate an already parsed document. |
+| `cliff_format.effective_context / effective_type / effective_emotion / effective_max_width` | Resolve a group-inherited value for one entry. |
+| `cliff_format.to_dict(doc)` / `cliff_format.from_dict(data)` | Convert between `CliffDocument` and a JSON-shaped dict. |
+| `cliff_format.to_json(doc)` / `cliff_format.from_json(text)` | Convert between `CliffDocument` and JSON text. |
 
 ## Converter support
 
@@ -104,60 +104,60 @@ Current converter is **bidirectional** for:
 API example:
 
 ```python
-# CLIF -> other format
-po_text = clif_format.to_po(doc)
-yaml_text = clif_format.to_yaml(doc)
+# CLIFF -> other format
+po_text = cliff_format.to_po(doc)
+yaml_text = cliff_format.to_yaml(doc)
 
-# other format -> CLIF
-doc = clif_format.from_po(po_text)
-doc = clif_format.from_yaml(yaml_text)
+# other format -> CLIFF
+doc = cliff_format.from_po(po_text)
+doc = cliff_format.from_yaml(yaml_text)
 ```
 
 ### Metadata channels
 
-CLIF carries context as first-class data, and every converter moves that data
+CLIFF carries context as first-class data, and every converter moves that data
 through the target format's own documented metadata channel — never through an
 invented one:
 
-| Format | Channel used for CLIF attributes | Channel used for context |
+| Format | Channel used for CLIFF attributes | Channel used for context |
 | --- | --- | --- |
-| JSON / YAML / CSV | native fields of the CLIF-shaped document | native field |
-| XLIFF 2.x | metadata module (`mda:metadata` / `mda:metaGroup category="clif"` / `mda:meta`), plus `state` on `segment` for status | `mda:meta type="context"` and a plain `note` |
+| JSON / YAML / CSV | native fields of the CLIFF-shaped document | native field |
+| XLIFF 2.x | metadata module (`mda:metadata` / `mda:metaGroup category="cliff"` / `mda:meta`), plus `state` on `segment` for status | `mda:meta type="context"` and a plain `note` |
 | XLIFF 2.2 glossary | additionally the glossary module (`gls:glossEntry`) for `variant: glossary` | `gls:definition` |
-| gettext PO | extracted comments `#. clif:<key>: <value>`; `#:` for references; `msgctxt` for the group path and entry id | plain `#.` comment |
-| Fluent | message comment `# clif:<key> = <value>` (attributes are translatable content, so they are not used for metadata) | plain `#` comment |
-| Android strings.xml | XML comment above the resource, `clif:<key>: <value>` | first line of that comment |
-| iOS Localizable.strings | `/* ... */` block comment above the pair, `clif:<key>: <value>` | first line of that comment |
+| gettext PO | extracted comments `#. cliff:<key>: <value>`; `#:` for references; `msgctxt` for the group path and entry id | plain `#.` comment |
+| Fluent | message comment `# cliff:<key> = <value>` (attributes are translatable content, so they are not used for metadata) | plain `#` comment |
+| Android strings.xml | XML comment above the resource, `cliff:<key>: <value>` | first line of that comment |
+| iOS Localizable.strings | `/* ... */` block comment above the pair, `cliff:<key>: <value>` | first line of that comment |
 
 Because formats without a group level cannot express inheritance, the exporters
 fold the group values into each entry (the effective context, type, emotion and
 max-width) so nothing is lost.
 
 The reverse direction is deliberately conservative. An importer reads only the
-metadata the source format actually defines: namespaced `clif:` entries become
-CLIF attributes, an ordinary comment becomes `context`, and everything else
+metadata the source format actually defines: namespaced `cliff:` entries become
+CLIFF attributes, an ordinary comment becomes `context`, and everything else
 falls back to a documented default (`type: sentence`, `status` derived from
 whether a translation exists). **A converter never invents context, emotion,
 references, widths or reviewers that the source file did not contain.**
 ### Round-trip fidelity
 
-JSON, YAML, CSV, and XLIFF preserve the whole CLIF data model, so `clif -> format -> clif` is lossless. The remaining formats have no slot for some CLIF fields:
+JSON, YAML, CSV, and XLIFF preserve the whole CLIFF data model, so `cliff -> format -> cliff` is lossless. The remaining formats have no slot for some CLIFF fields:
 
 | Format | Fidelity | Dropped on the way back |
 | --- | --- | --- |
 | JSON / YAML / CSV | yes | — |
-| XLIFF 2.0 / 2.1 / 2.2 | yes | — (CLIF-only fields travel as `clif:`-categorised notes) |
+| XLIFF 2.0 / 2.1 / 2.2 | yes | — (CLIFF-only fields travel as `cliff:`-categorised notes) |
 | PO | entry level | header prose (`variant`, `version`, `title`, `info`, `standard`, `dependency`) and the group structure; every entry attribute survives |
 | Fluent | entry level | header prose and the group structure; Fluent attributes of foreign files cannot be represented |
 | Android strings.xml | entry level | header prose and the group structure |
 | iOS Localizable.strings | entry level | header prose and the group structure |
 
-Importers coerce foreign identifiers into valid CLIF names (lowercase kebab-case) and disambiguate duplicates, so every generated document validates.
+Importers coerce foreign identifiers into valid CLIFF names (lowercase kebab-case) and disambiguate duplicates, so every generated document validates.
 
 Install optional converter dependencies with:
 
 ```bash
-pip install "clif-python[converters]"
+pip install "cliff-python[converters]"
 ```
 
 ## Conversion samples
@@ -165,13 +165,13 @@ pip install "clif-python[converters]"
 For every supported format, conversion samples are self-contained in two directories:
 
 ```text
-examples/clif_to_<format>/
-├── <name>.clif      # source CLIF
-└── <name>.<ext>     # CLIF -> format result
+examples/cliff_to_<format>/
+├── <name>.cliff      # source CLIFF
+└── <name>.<ext>     # CLIFF -> format result
 
-examples/<format>_to_clif/
+examples/<format>_to_cliff/
 ├── <name>.<ext>     # source format file
-└── <name>.clif      # format -> CLIF result
+└── <name>.cliff      # format -> CLIFF result
 ```
 
 Supported sample formats: `json`, `yaml`, `csv`, `po`, `xliff`, `fluent`, `android`, `ios`.
@@ -187,16 +187,16 @@ pytest tests/test_conversion.py
 ## Repository layout
 
 ```text
-clif-python/
+cliff-python/
 ├── pyproject.toml
 ├── src/
-│   └── clif_format/
-│       ├── model.py         # dataclasses for the CLIF data model
+│   └── cliff_format/
+│       ├── model.py         # dataclasses for the CLIFF data model
 │       ├── parser.py        # single-pass line parser
 │       ├── serializer.py    # canonical serializer
 │       ├── validator.py     # semantic validation and inheritance helpers
 │       ├── converter.py     # bidirectional format converters
-│       └── cli.py           # clif_format command line
+│       └── cli.py           # cliff_format command line
 ├── tools/
 │   └── regenerate_examples.py
 ├── examples/

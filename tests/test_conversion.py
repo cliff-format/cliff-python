@@ -5,19 +5,19 @@ from pathlib import Path
 import pytest
 from conftest import REPO_ROOT
 
-from clif_format import from_json, load, serialize, to_json
+from cliff_format import from_json, load, serialize, to_json
 
-SAMPLE_DIR = REPO_ROOT / "examples" / "clif_to_json"
+SAMPLE_DIR = REPO_ROOT / "examples" / "cliff_to_json"
 
 
 def _sample_files() -> list[Path]:
-    return sorted(SAMPLE_DIR.glob("*.clif")) if SAMPLE_DIR.is_dir() else []
+    return sorted(SAMPLE_DIR.glob("*.cliff")) if SAMPLE_DIR.is_dir() else []
 
 
-@pytest.mark.parametrize("clif_path", _sample_files(), ids=lambda p: p.name)
-def test_clif_to_json_and_back(clif_path: Path) -> None:
-    """A CLIF document survives a JSON round-trip with its data intact."""
-    document = load(clif_path)
+@pytest.mark.parametrize("cliff_path", _sample_files(), ids=lambda p: p.name)
+def test_cliff_to_json_and_back(cliff_path: Path) -> None:
+    """A CLIFF document survives a JSON round-trip with its data intact."""
+    document = load(cliff_path)
     json_text = to_json(document, indent=2, ensure_ascii=False)
     roundtrip = from_json(json_text)
 
@@ -37,7 +37,7 @@ def test_clif_to_json_and_back(clif_path: Path) -> None:
         assert dst_entry.target == src_entry.target
         assert dst_entry.status == src_entry.status
 
-    # The regenerated CLIF must itself be parseable and stable.
+    # The regenerated CLIFF must itself be parseable and stable.
     once = serialize(roundtrip)
     assert serialize(from_json(to_json(roundtrip))) == once
 

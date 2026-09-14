@@ -1,0 +1,19 @@
+CLIFF 1.0
+namespace: android
+clan: imported
+source-language: und
+target-language: und
+
+[android]
+
+<resolution>
+source: "resolution"
+target: "分辨率"
+type: sentence
+status: translated
+
+<fullscreen>
+source: "fullscreen"
+target: "全屏"
+type: sentence
+status: translated

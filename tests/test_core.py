@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from clif_format import (
-    ClifParseError,
+from cliff_format import (
+    CliffParseError,
     from_dict,
     from_json,
     parse,
@@ -11,7 +11,7 @@ from clif_format import (
     validate,
 )
 
-SAMPLE = """CLIF 1.0
+SAMPLE = """CLIFF 1.0
 namespace: demo
 clan: settings
 source-language: en-US
@@ -58,7 +58,7 @@ def test_parse_minimal():
 
 
 def test_duplicate_field_raises():
-    text = """CLIF 1.0
+    text = """CLIFF 1.0
 namespace: demo
 namespace: demo
 clan: settings
@@ -67,7 +67,7 @@ target-language: zh-CN
 """
     try:
         parse(text)
-    except ClifParseError as exc:
+    except CliffParseError as exc:
         assert exc.category == "semantic"
         assert "may appear at most once" in exc.message
     else:
@@ -77,7 +77,7 @@ target-language: zh-CN
 def test_serializer_canonical_roundtrip():
     doc = parse(SAMPLE)
     output = serialize(doc)
-    assert output.startswith("CLIF 1.0\n")
+    assert output.startswith("CLIFF 1.0\n")
     assert "\nnamespace: demo\n" in output
     assert "\n[video]\n" in output
     assert "\n<resolution>\n" in output
@@ -94,7 +94,7 @@ def test_validate_ok():
 
 
 def test_validate_missing_type():
-    text = """CLIF 1.0
+    text = """CLIFF 1.0
 namespace: demo
 clan: settings
 source-language: en-US
@@ -111,7 +111,7 @@ status: final
 
 
 def test_validate_bad_status_and_icu():
-    text = """CLIF 1.0
+    text = """CLIFF 1.0
 namespace: demo
 clan: settings
 source-language: en-US
@@ -133,7 +133,7 @@ status: final
 
 
 def test_validate_reviewed_without_target():
-    text = """CLIF 1.0
+    text = """CLIFF 1.0
 namespace: demo
 clan: settings
 source-language: en-US

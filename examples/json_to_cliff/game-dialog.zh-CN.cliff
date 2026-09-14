@@ -1,0 +1,28 @@
+CLIFF 1.0
+namespace: ironforge-rpg
+clan: game
+source-language: zh-CN
+target-language: en-US
+version: "1.4.2"
+title: "IronForge RPG — Act 3 dialog"
+info: "One week after the siege."
+standard: "Preserve proper nouns; localize idioms for humor."
+dependency: ["../terms/terms.zh-CN.cliff"]
+
+[dialog.act3.first-meet]
+context: "The player meets Captain Mei at the city gate after the siege."
+type: dialogue
+emotion: [polite, calm]
+
+<greeting>
+source: "你好，旅行者。"
+target: "Hello, traveler."
+status: final
+context: "Captain Mei greets the player."
+
+<ask-companion>
+source: "{name}，{gender, select, male {他} female {她} other {他们}} 是你的同伴吗？"
+target: "{name}, is {gender, select, male {he} female {she} other {they}} your companion?"
+emotion: [surprised, playful]
+status: reviewed
+reference: ["src/dialog/act3.cpp:87"]

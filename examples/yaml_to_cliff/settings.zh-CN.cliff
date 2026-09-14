@@ -1,0 +1,19 @@
+CLIFF 1.0
+namespace: json
+clan: imported
+source-language: und
+target-language: und
+
+[video]
+
+<resolution>
+source: "video.resolution"
+target: "分辨率"
+type: sentence
+status: translated
+
+<fullscreen>
+source: "video.fullscreen"
+target: "全屏"
+type: sentence
+status: translated
