@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .identifiers import Correction
+
 
 @dataclass
 class Header:
@@ -68,11 +70,23 @@ class Group:
 
 @dataclass
 class CliffDocument:
-    """The parsed representation of one CLIFF file."""
+    """The parsed representation of one CLIFF file.
+
+    ``spec_version`` is the version the document *declared* on its version
+    line (``"1.0"`` or ``"1.1"``), not the version of this library. A
+    canonical serializer preserves it, so round-tripping a 1.0 document does
+    not silently upgrade the file.
+
+    ``corrections`` collects the repairs a tolerant parse made (specification
+    Appendix C). It stays empty for a strict parse: strict mode rejects instead
+    of repairing.
+    """
 
     header: Header = field(default_factory=Header)
     groups: list[Group] = field(default_factory=list)
     path: Path | None = None
+    spec_version: str = "1.1"
+    corrections: list[Correction] = field(default_factory=list)
 
     def canonical_id(self, group: Group, entry: Entry) -> str:
         """Return the CLIFF canonical ID for an entry."""
@@ -89,7 +103,10 @@ class ValidationIssue:
     """A single validation issue.
 
     Categories follow CLIFF's diagnostic model: ``syntax``, ``semantic``,
-    ``vocabulary``, ``icu``, ``id``, ``extension`` and ``warning``.
+    ``vocabulary``, ``icu``, ``id``, ``extension`` and ``warning``, plus the
+    two opt-in categories of CLIFF 1.1: ``correction`` (a repair a tolerant
+    parse made) and ``style`` (a deviation from ``style/README.md``). Only the
+    first six are errors; the last four are reported without failing a file.
     """
 
     line: int = 0
