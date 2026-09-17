@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "cliff-python"
 version = "0.1.0"
-description = "Official Python parser, serializer, validator and converter for CLIFF 1.0 (import name: cliff_format)"
+description = "Official Python parser, serializer, validator and converter for CLIFF 1.0 / 1.1 (import name: cliff_format)"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
