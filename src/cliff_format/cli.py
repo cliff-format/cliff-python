@@ -26,9 +26,9 @@ from .converter import (
 )
 from .errors import CliffParseError
 from .model import ValidationIssue
-from .parser import load
+from .parser import SUPPORTED_VERSIONS, load
 from .serializer import serialize
-from .validator import validate
+from .validator import ADVISORY_CATEGORIES, validate
 
 CONVERT_FORMATS = ["cliff", "json", "yaml", "csv", "po", "xliff", "fluent", "android", "ios"]
 
@@ -38,7 +38,13 @@ def _read_text(path: Path) -> str:
 
 
 def _clan_from_path(path: Path) -> str:
-    """Derive a valid CLIFF clan name from the source file name."""
+    """Derive a CLIFF clan name from the source file name.
+
+    The name is folded to kebab-case so the generated document also conforms to
+    the recommended style of ``style/README.md``; CLIFF 1.1 itself would accept
+    the original capitalization, but a generated document is the one place a
+    tool legitimately chooses the style.
+    """
     stem = path.stem
     first = stem.split(".")[0]
     clan = re.sub(r"[^a-z0-9-]+", "-", first.lower()).strip("-")
@@ -60,27 +66,55 @@ def _print_issues(issues: list[ValidationIssue], path: Path) -> int:
     errors = 0
     for issue in issues:
         print(_format_issue(path, issue.line, issue.category, issue.message, issue.text))
-        if issue.category not in ("warning", "extension"):
+        if issue.category not in ADVISORY_CATEGORIES:
             errors += 1
     return 1 if errors else 0
 
 
 def _cmd_parse(args: argparse.Namespace) -> int:
-    doc = load(args.path)
+    doc = load(args.path, tolerant=args.tolerant)
+    if args.tolerant:
+        for correction in doc.corrections:
+            print(
+                _format_issue(
+                    args.path,
+                    correction.line,
+                    correction.category,
+                    correction.detail(),
+                    "",
+                ),
+                file=sys.stderr,
+            )
     print(to_json(doc))
     return 0
 
 
 def _cmd_serialize(args: argparse.Namespace) -> int:
-    doc = load(args.path)
-    sys.stdout.write(serialize(doc))
+    doc = load(args.path, tolerant=args.tolerant)
+    if args.spec_version:
+        doc.spec_version = args.spec_version
+    for correction in doc.corrections:
+        print(
+            _format_issue(
+                args.path, correction.line, correction.category, correction.detail(), ""
+            ),
+            file=sys.stderr,
+        )
+    sys.stdout.write(serialize(doc, style=args.style))
     return 0
 
 
 def _cmd_validate(args: argparse.Namespace) -> int:
     path = Path(args.path)
     text = _read_text(path)
-    issues = validate(text, path=path, check_width=args.check_width)
+    issues = validate(
+        text,
+        path=path,
+        check_width=args.check_width,
+        check_layout=args.check_layout,
+        style=args.style,
+        tolerant=args.tolerant,
+    )
     return _print_issues(issues, path)
 
 
@@ -91,7 +125,16 @@ def _cmd_convert(args: argparse.Namespace) -> int:
     clan = _clan_from_path(path)
 
     if input_format == "cliff":
-        doc = load(path)
+        # The tolerant mode exists exactly for this: an AI translation pipeline
+        # that must not lose a translation to a formatting slip.
+        doc = load(path, tolerant=args.tolerant)
+        for correction in doc.corrections:
+            print(
+                _format_issue(
+                    path, correction.line, correction.category, correction.detail(), ""
+                ),
+                file=sys.stderr,
+            )
     else:
         text = _read_text(path)
         if input_format == "json":
@@ -114,7 +157,7 @@ def _cmd_convert(args: argparse.Namespace) -> int:
             raise ValueError(f"unsupported input format: {input_format}")
 
     if output_format == "cliff":
-        output = serialize(doc)
+        output = serialize(doc, style=args.style)
     elif output_format == "json":
         output = to_json(doc)
     elif output_format == "yaml":
@@ -146,24 +189,88 @@ def _cmd_convert(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="cliff_format",
-        description="CLIFF 1.0 Python parser, serializer, validator and converter",
+        description="CLIFF 1.0 / 1.1 Python parser, serializer, validator and converter",
+        epilog=(
+            "Strict parsing is the default: anything the specification rejects is an "
+            "error. --tolerant applies the documented relaxations of CLIFF 1.1 "
+            "Appendix C and reports every repair; it never guesses missing data. "
+            "A style deviation is never an error — use --style to see it."
+        ),
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p = sub.add_parser("parse", help="parse a .cliff file and print JSON")
+    p = sub.add_parser(
+        "parse",
+        help="parse a .cliff file and print JSON",
+        description="Parse a .cliff file and print the data model as JSON.",
+    )
     p.add_argument("path", type=Path)
+    p.add_argument(
+        "--tolerant",
+        action="store_true",
+        help="apply the Appendix C relaxations and report every repair on stderr",
+    )
     p.set_defaults(func=_cmd_parse)
 
-    p = sub.add_parser("serialize", help="parse and print canonical CLIFF")
+    p = sub.add_parser(
+        "serialize",
+        help="parse and print canonical CLIFF",
+        description="Parse a .cliff file and print canonical CLIFF 1.1.",
+    )
     p.add_argument("path", type=Path)
+    p.add_argument(
+        "--tolerant",
+        action="store_true",
+        help="apply the Appendix C relaxations before serializing",
+    )
+    p.add_argument(
+        "--spec-version",
+        choices=list(SUPPORTED_VERSIONS),
+        default=None,
+        help=(
+            "version line to emit (default: the version the document declared, "
+            "or 1.1 for a newly built document)"
+        ),
+    )
+    p.add_argument(
+        "--style",
+        action="store_true",
+        help="also normalize identifiers to the recommended shape of style/README.md",
+    )
     p.set_defaults(func=_cmd_serialize)
 
-    p = sub.add_parser("validate", help="validate a .cliff file")
+    p = sub.add_parser(
+        "validate",
+        help="validate a .cliff file",
+        description=(
+            "Validate a .cliff file. Layout mismatches are warnings by default "
+            "because CLIFF 1.1 recommends a layout rather than requiring it."
+        ),
+    )
     p.add_argument("path", type=Path)
-    p.add_argument("--check-width", action="store_true")
+    p.add_argument("--check-width", action="store_true", help="report max-width overflow")
+    p.add_argument(
+        "--check-layout",
+        action="store_true",
+        help="report a file-layout/header mismatch as an error instead of a warning",
+    )
+    p.add_argument(
+        "--style",
+        action="store_true",
+        help="report style/README.md deviations as warnings",
+    )
+    p.add_argument(
+        "--tolerant",
+        action="store_true",
+        help="repair the Appendix C deviations and report each repair",
+    )
     p.set_defaults(func=_cmd_validate)
 
-    p = sub.add_parser("convert", help="convert between CLIFF and common formats")
+    p = sub.add_parser(
+        "convert",
+        help="convert between CLIFF and common formats",
+        description="Convert between CLIFF and common localization formats.",
+    )
     p.add_argument("path", type=Path)
     p.add_argument(
         "--from",
@@ -181,6 +288,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="output format (default: json)",
     )
     p.add_argument("-o", "--output", type=Path, default=None)
+    p.add_argument(
+        "--tolerant",
+        action="store_true",
+        help="apply the Appendix C relaxations when reading CLIFF input",
+    )
+    p.add_argument(
+        "--style",
+        action="store_true",
+        help="normalize identifiers when the output format is CLIFF",
+    )
     p.add_argument(
         "--xliff-version",
         choices=list(XLIFF_VERSIONS),

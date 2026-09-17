@@ -1,4 +1,4 @@
-"""cliff_format - official Python implementation for CLIFF 1.0."""
+"""cliff_format - official Python implementation for CLIFF 1.0 and 1.1."""
 
 from .converter import (
     XLIFF_VERSIONS,
@@ -23,11 +23,21 @@ from .converter import (
     to_xliff,
     to_yaml,
 )
-from .errors import CliffError, CliffParseError
+from .errors import CliffError, CliffParseError, UnsupportedSpecVersion
+from .identifiers import (
+    Correction,
+    is_name,
+    is_style_identifier,
+    is_tag,
+    normalize_identifier,
+    strip_line_terminator,
+    unique_identifier,
+)
 from .model import CliffDocument, Entry, Group, Header, ValidationIssue
-from .parser import load, parse
+from .parser import CANONICAL_VERSION, load, parse, parse_tolerant
 from .serializer import serialize
 from .validator import (
+    ADVISORY_CATEGORIES,
     effective_context,
     effective_emotion,
     effective_max_width,
@@ -35,18 +45,27 @@ from .validator import (
     validate,
     validate_document,
 )
+from .vocabulary import EMOTION_TAGS, GLOSSARY_TYPES, STATUS_TAGS, TYPE_TAGS
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
-    "XLIFF_VERSIONS",
+    "ADVISORY_CATEGORIES",
+    "CANONICAL_VERSION",
     "CliffDocument",
     "CliffError",
     "CliffParseError",
+    "Correction",
+    "EMOTION_TAGS",
     "Entry",
+    "GLOSSARY_TYPES",
     "Group",
     "Header",
+    "STATUS_TAGS",
+    "TYPE_TAGS",
+    "UnsupportedSpecVersion",
     "ValidationIssue",
+    "XLIFF_VERSIONS",
     "effective_context",
     "effective_emotion",
     "effective_max_width",
@@ -62,9 +81,15 @@ __all__ = [
     "from_po",
     "from_xliff",
     "from_yaml",
+    "is_name",
+    "is_style_identifier",
+    "is_tag",
     "load",
+    "normalize_identifier",
     "parse",
+    "parse_tolerant",
     "serialize",
+    "strip_line_terminator",
     "to_android_strings",
     "to_csv",
     "to_dict",
@@ -74,6 +99,7 @@ __all__ = [
     "to_po",
     "to_xliff",
     "to_yaml",
+    "unique_identifier",
     "validate",
     "validate_document",
     "__version__",

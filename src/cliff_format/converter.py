@@ -8,10 +8,10 @@ from typing import Any
 from xml.etree import ElementTree as ET
 
 from .errors import CliffError
+from .identifiers import is_name, normalize_identifier
 from .model import CliffDocument, Entry, Group, Header
 from .validator import effective_context
 
-NAME_RE = re.compile(r"^[a-z][a-z0-9-]*$")
 PIPE_ESCAPE_RE = re.compile(r"\\(.)")
 
 
@@ -186,15 +186,20 @@ def _safe_name(text: str, fallback: str = "entry") -> str:
     """Coerce arbitrary external text into a valid CLIFF name.
 
     Identifiers imported from JSON keys, Android/iOS resource names or CSV
-    columns routinely contain uppercase letters, underscores or dots, none of
-    which the specification allows. They are folded to lowercase kebab-case so
-    every generated document validates.
+    columns routinely contain spaces, separators, or punctuation that the
+    specification does not allow. As of CLIFF 1.1 the *casing* is not one of
+    those problems: ``InvSwordIron`` and ``bad_id`` are valid names, and a
+    converter MUST preserve them, because an identifier is a translation match
+    key and folding it silently breaks every translation memory that uses it.
+
+    Only characters outside the name set are replaced, by the documented
+    normalization of specification Appendix C.3, and the caller is expected to
+    report every rename it had to make.
     """
-    candidate = re.sub(r"[^a-z0-9-]+", "-", text.strip().lower()).strip("-")
-    candidate = re.sub(r"-{2,}", "-", candidate)
-    if not candidate or not NAME_RE.match(candidate):
-        candidate = f"{fallback}-{candidate}".strip("-") if candidate else fallback
-    return candidate if NAME_RE.match(candidate) else fallback
+    if not text.strip():
+        return fallback
+    candidate = normalize_identifier(text, kind=fallback)
+    return candidate if is_name(candidate) else fallback
 
 
 def _safe_group_path(path: str, fallback: str = "imported") -> str:
