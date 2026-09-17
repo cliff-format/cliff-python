@@ -175,25 +175,56 @@ def test_duplicate_entry_id_reports_both_occurrences() -> None:
     assert any("demo.settings.video.resolution" in m for m in messages)
 
 
-# Specification 11 - file layout must agree with the header
+# Specification 11 - the layout is a recommendation, reported as a warning
 
 
-def test_flat_layout_mismatch_is_reported(tmp_path_factory: pytest.TempPathFactory) -> None:
+def test_flat_layout_mismatch_is_a_warning_by_default() -> None:
+    """CLIFF 1.1 §11.3: the header identifies the file, not its name."""
     text = document('source: "R"\nstatus: initial\n')
     assert errors_of(text, path=Path("settings.zh-CN.cliff")) == []
+    issues = validate(text, path=Path("other.zh-CN.cliff"))
+    warnings = [
+        i for i in issues if i.category == "warning" and "flat layout mismatch" in i.message
+    ]
+    assert len(warnings) == 1
+    assert not [i for i in issues if i.category not in ("warning", "extension", "style")]
+
+
+def test_flat_layout_mismatch_is_an_error_when_layout_is_enforced() -> None:
+    text = document('source: "R"\nstatus: initial\n')
+    assert errors_of(text, path=Path("settings.zh-CN.cliff"), check_layout=True) == []
     assert any(
         "flat layout mismatch" in m
-        for m in errors_of(text, path=Path("other.zh-CN.cliff"))
+        for m in errors_of(text, path=Path("other.zh-CN.cliff"), check_layout=True)
     )
 
 
-def test_folder_layout_mismatch_is_reported() -> None:
+def test_folder_layout_mismatch_is_a_warning_by_default() -> None:
     text = document('source: "R"\nstatus: initial\n')
     assert errors_of(text, path=Path("zh-CN/settings.cliff")) == []
+    issues = validate(text, path=Path("ja-JP/settings.cliff"))
+    assert [i.message for i in issues if i.category == "warning" and "folder layout" in i.message]
+    assert not [i for i in issues if i.category not in ("warning", "extension", "style")]
+
+
+def test_folder_layout_mismatch_is_an_error_when_layout_is_enforced() -> None:
+    text = document('source: "R"\nstatus: initial\n')
     assert any(
         "folder layout mismatch" in m
-        for m in errors_of(text, path=Path("ja-JP/settings.cliff"))
+        for m in errors_of(text, path=Path("ja-JP/settings.cliff"), check_layout=True)
     )
+
+
+def test_two_letter_language_directories_are_recognized() -> None:
+    """A bare primary subtag ("en") is a language folder, not a word."""
+    text = document('source: "R"\nstatus: initial\n')
+    # zh-CN is the declared target language, so this folder is consistent.
+    assert errors_of(text, path=Path("zh-CN/settings.cliff"), check_layout=True) == []
+    # A two-letter folder is recognized as a language folder, so a mismatch in
+    # it is reported; a word-like folder would simply skip the check.
+    mismatch = errors_of(text, path=Path("en/settings.cliff"), check_layout=True)
+    assert any("directory 'en' does not match target-language" in m for m in mismatch)
+    assert errors_of(text, path=Path("fixtures/settings.cliff"), check_layout=True) == []
 
 
 def test_word_like_directories_are_not_language_tags() -> None:
@@ -255,7 +286,6 @@ def test_extension_fields_warn_and_round_trip_verbatim() -> None:
 def test_unknown_non_extension_key_is_an_error() -> None:
     with pytest.raises(CliffParseError, match="unknown header key"):
         parse(HEADER + 'nickname: "x"\n')
-
 
 # Specification 14 - ICU payloads
 

@@ -1,0 +1,4 @@
+* text=auto eol=lf
+*.cliff text eol=lf
+*.abnf text eol=lf
+*.md text eol=lf
