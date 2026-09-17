@@ -5,89 +5,52 @@ import unicodedata
 from pathlib import Path
 
 from .errors import CliffParseError
+from .identifiers import (
+    Correction,
+    has_style_obligation,
+    is_style_identifier,
+    strip_line_terminator,
+)
 from .model import CliffDocument, Entry, Group, ValidationIssue
 from .parser import parse
+from .vocabulary import (
+    EMOTION_TAGS,
+    GLOSSARY_TYPES,
+    SPEECH_TYPES,
+    STATUS_TAGS,
+    TYPE_TAGS,
+)
 
-TYPE_TAGS = {
-    "noun",
-    "verb",
-    "adjective",
-    "adverb",
-    "pronoun",
-    "numeral",
-    "preposition",
-    "conjunction",
-    "particle",
-    "interjection",
-    "proper-noun",
-    "noun-phrase",
-    "verb-phrase",
-    "adjective-phrase",
-    "adverb-phrase",
-    "fixed-phrase",
-    "idiom",
-    "sentence",
-    "description",
-    "narration",
-    "dialogue",
-    "monologue",
-    "prompt",
-    "label",
-    "subtitle",
-    "accessibility-cue",
-}
-
-EMOTION_TAGS = {
-    "neutral",
-    "objective",
-    "mechanical",
-    "joyful",
-    "sad",
-    "angry",
-    "fearful",
-    "surprised",
-    "curious",
-    "disgusted",
-    "anxious",
-    "calm",
-    "playful",
-    "serious",
-    "urgent",
-    "romantic",
-    "hopeful",
-    "grateful",
-    "formal",
-    "informal",
-    "polite",
-    "rude",
-    "nostalgic",
-}
-
-STATUS_TAGS = {"initial", "translated", "reviewed", "final"}
+# Re-exported for compatibility: these sets were defined here before CLIFF 1.1
+# moved them into `vocabulary`, and callers import them from the validator.
+__all__ = [
+    "EMOTION_TAGS",
+    "GLOSSARY_TYPES",
+    "SPEECH_TYPES",
+    "STATUS_TAGS",
+    "TYPE_TAGS",
+    "ADVISORY_CATEGORIES",
+    "effective_context",
+    "effective_emotion",
+    "effective_max_width",
+    "effective_type",
+    "validate",
+    "validate_document",
+]
 
 # A directory or file-name segment that plausibly is a BCP 47 tag: a 2-3 letter
 # primary subtag optionally followed by letter/digit subtags. Word-like names
-# such as "valid" or "quality" are deliberately not language tags.
+# such as "valid" or "quality" are deliberately not language tags. The
+# two-letter case ("en") matters: a project may use a bare primary subtag
+# directory.
 LANGUAGE_DIR_RE = re.compile(r"^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$")
-GLOSSARY_TYPES = {
-    "noun",
-    "verb",
-    "adjective",
-    "adverb",
-    "pronoun",
-    "numeral",
-    "preposition",
-    "conjunction",
-    "particle",
-    "interjection",
-    "proper-noun",
-    "noun-phrase",
-    "verb-phrase",
-    "adjective-phrase",
-    "adverb-phrase",
-    "fixed-phrase",
-    "idiom",
-}
+
+#: Categories that are reported without making a document invalid.
+ADVISORY_CATEGORIES = frozenset({"warning", "extension", "correction", "style"})
+
+#: The recommended file-name shapes of `style/README.md`, used by `--style`.
+STYLE_KEBAB_GROUP_RE = re.compile(r"^[a-z][a-z0-9-]*$")
+STYLE_PASCAL_GROUP_RE = re.compile(r"^[A-Z][A-Za-z0-9]*$")
 
 
 def _brace_balance(text: str, line: int) -> list[ValidationIssue]:
@@ -171,9 +134,6 @@ def _display_cells(text: str) -> int:
     return total
 
 
-SPEECH_TYPES = frozenset({"dialogue", "monologue", "idiom"})
-
-
 def effective_max_width(entry: Entry, group: Group) -> int | None:
     """Effective max-width: the entry value overrides the group value."""
     return entry.max_width if entry.max_width is not None else group.max_width
@@ -209,7 +169,7 @@ def effective_context(entry: Entry, group: Group) -> str | None:
     return " ".join(parts) if parts else None
 
 
-def _bad_tag(key: str, value: str, allowed: set[str]) -> str:
+def _bad_tag(key: str, value: str, allowed: set[str] | frozenset[str]) -> str:
     return f"{key}: invalid tag '{value}'; allowed: {', '.join(sorted(allowed))}"
 
 
@@ -233,9 +193,16 @@ def _check_extensions(
 def _check_layout(document: CliffDocument) -> list[ValidationIssue]:
     """Check the file layout against the header, per specification 11.3.
 
-    Folder layout is <target-language>/<clan>.cliff and flat layout is
-    <clan>.<target-language>.cliff. Both must agree with the header; a file
-    matching neither shape is still valid and simply skips this check.
+    In CLIFF 1.1 the layout is a **recommendation**, so every finding here is a
+    warning by default: a file keeps its identity in the header whether or not
+    its name agrees. Callers that want the convention enforced pass
+    ``check_layout=True`` to :func:`validate`, which promotes these findings to
+    errors (the specification permits an explicit opt-in strict mode and
+    requires the mode to be visible rather than accidental).
+
+    Folder layout is ``<target-language>/<clan>.cliff`` and flat layout is
+    ``<clan>.<target-language>.cliff``. A file matching neither shape is still
+    valid and simply skips this check.
     """
     path = document.path
     header = document.header
@@ -252,7 +219,7 @@ def _check_layout(document: CliffDocument) -> list[ValidationIssue]:
             issues.append(
                 ValidationIssue(
                     line=0,
-                    category="semantic",
+                    category="layout",
                     message=(
                         f"folder layout mismatch: directory '{parent}' does not match "
                         f"target-language '{header.target_language}'"
@@ -264,7 +231,7 @@ def _check_layout(document: CliffDocument) -> list[ValidationIssue]:
             issues.append(
                 ValidationIssue(
                     line=0,
-                    category="semantic",
+                    category="layout",
                     message=(
                         f"folder layout mismatch: file name '{stem}' does not match "
                         f"clan '{header.clan}'"
@@ -280,7 +247,7 @@ def _check_layout(document: CliffDocument) -> list[ValidationIssue]:
             issues.append(
                 ValidationIssue(
                     line=0,
-                    category="semantic",
+                    category="layout",
                     message=(
                         f"flat layout mismatch: '{stem}.cliff' does not match header "
                         f"clan '{header.clan}' and target-language "
@@ -292,12 +259,90 @@ def _check_layout(document: CliffDocument) -> list[ValidationIssue]:
     return issues
 
 
+def _check_style(document: CliffDocument) -> list[ValidationIssue]:
+    """Report deviations from ``style/README.md`` as warnings.
+
+    Style is informative (specification 10.1), so nothing here is an error. The
+    check exists so a project can opt into enforcing its own convention without
+    asking the format's grammar to enforce it for everyone.
+    """
+    issues: list[ValidationIssue] = []
+
+    def note_identifier(line: int, kind: str, value: str, text: str = "") -> None:
+        if not value or is_style_identifier(value) or not has_style_obligation(value):
+            return
+        issues.append(
+            ValidationIssue(
+                line=line,
+                category="style",
+                message=(
+                    f"{kind} '{value}' is valid CLIFF but does not follow "
+                    "style/README.md (recommended: kebab-case or PascalCase, not mixed)"
+                ),
+                text=text or value,
+            )
+        )
+
+    note_identifier(0, "namespace", document.header.namespace)
+    note_identifier(0, "clan", document.header.clan)
+    for group in document.groups:
+        for segment in group.path.split("."):
+            note_identifier(group.line, "group segment", segment, f"[{group.path}]")
+        for entry in group.entries:
+            note_identifier(entry.line, "entry id", entry.id, f"<{entry.id}>")
+    return issues
+
+
+def _check_terminator_style(document: CliffDocument, text: str) -> list[ValidationIssue]:
+    """Report trailing ``,`` / ``;`` terminators as a style deviation.
+
+    The terminator is legal CLIFF 1.1 syntax (specification 5.6) and means
+    nothing, so a document that uses it is valid; the style guide recommends
+    not writing it, and this check says so.
+    """
+    issues: list[ValidationIssue] = []
+    for index, raw in enumerate(text.split("\n"), start=1):
+        _, terminators, _ = strip_line_terminator(raw)
+        if terminators:
+            issues.append(
+                ValidationIssue(
+                    line=index,
+                    category="style",
+                    message=(
+                        f"line ends with a '{terminators[-1]}' terminator; CLIFF 1.1 accepts "
+                        "it but style/README.md recommends not writing it"
+                    ),
+                    text=raw.strip(),
+                )
+            )
+    return issues
+
+
+def _corrections_as_issues(corrections: list[Correction]) -> list[ValidationIssue]:
+    return [
+        ValidationIssue(
+            line=correction.line,
+            category="correction",
+            message=correction.detail(),
+            text=correction.before or correction.after,
+        )
+        for correction in corrections
+    ]
+
+
 def validate_document(
     document: CliffDocument,
     *,
     check_width: bool = False,
+    check_layout: bool = False,
+    style: bool = False,
 ) -> list[ValidationIssue]:
-    """Validate a parsed CliffDocument and return every issue it has."""
+    """Validate a parsed CliffDocument and return every issue it has.
+
+    ``check_layout`` promotes the layout recommendations of specification 11.3
+    from warnings to errors. ``style`` adds ``style``-category warnings for
+    identifier and terminator habits; it never turns one into an error.
+    """
     issues: list[ValidationIssue] = []
     header = document.header
 
@@ -331,11 +376,22 @@ def validate_document(
             )
         )
 
-    issues.extend(_check_layout(document))
+    for issue in _check_layout(document):
+        issues.append(
+            ValidationIssue(
+                line=issue.line,
+                category="semantic" if check_layout else "warning",
+                message=issue.message
+                + ("" if check_layout else " (layout is a recommendation in CLIFF 1.1)"),
+                text=issue.text,
+            )
+        )
     issues.extend(_check_extensions(header.extensions, 0, "header"))
+    issues.extend(_corrections_as_issues(document.corrections))
 
     seen_paths: set[str] = set()
     first_entry: dict[str, tuple[int, str]] = {}
+    seen_canonical: set[str] = set()
 
     for group in document.groups:
         if group.path in seen_paths:
@@ -392,6 +448,16 @@ def validate_document(
                 )
             else:
                 first_entry[entry.id] = (entry.line, canonical)
+            if canonical in seen_canonical:
+                issues.append(
+                    ValidationIssue(
+                        line=entry.line,
+                        category="id",
+                        message=f"duplicate canonical id '{canonical}'",
+                        text=f"<{entry.id}>",
+                    )
+                )
+            seen_canonical.add(canonical)
 
             if entry.source is None:
                 issues.append(
@@ -514,6 +580,9 @@ def validate_document(
                         )
                     )
 
+    if style:
+        issues.extend(_check_style(document))
+
     return issues
 
 
@@ -522,14 +591,22 @@ def validate(
     *,
     path: str | Path | None = None,
     check_width: bool = False,
+    check_layout: bool = False,
+    style: bool = False,
+    tolerant: bool = False,
 ) -> list[ValidationIssue]:
     """Parse and validate CLIFF text, returning a list of issues.
 
     This function never raises for invalid CLIFF; malformed syntax is returned
     as a ``syntax`` issue instead.
+
+    ``tolerant=True`` parses with the documented relaxations of specification
+    Appendix C and reports every repair as a ``correction`` issue. ``check_layout``
+    promotes layout recommendations to errors, and ``style`` adds style
+    warnings. Neither turns a style deviation into an error.
     """
     try:
-        document = parse(text, path=path)
+        document = parse(text, path=path, tolerant=tolerant)
     except CliffParseError as exc:
         return [
             ValidationIssue(
@@ -539,4 +616,12 @@ def validate(
                 text=exc.text,
             )
         ]
-    return validate_document(document, check_width=check_width)
+    issues = validate_document(
+        document,
+        check_width=check_width,
+        check_layout=check_layout,
+        style=style,
+    )
+    if style:
+        issues.extend(_check_terminator_style(document, text))
+    return issues
