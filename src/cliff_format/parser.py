@@ -382,6 +382,25 @@ def _parse_value(text: str, key: str) -> Any:
 # tolerant parsing (specification Appendix C)
 # ---------------------------------------------------------------------------
 
+#: Every repair category Appendix C.2 attaches to a relaxation, in the order the
+#: appendix lists them. Two relaxations share ``name-quote`` (C.2.4 quotes an
+#: entry id, C.2.7 quotes a key), so the set is smaller than the item count - the
+#: category names the operation, not the clause. ``tests/test_identifiers_drift.py``
+#: reads the appendix and fails if the two lists diverge, because a spec that
+#: gains a relaxation while the implementation keeps emitting the old set is
+#: exactly the silent divergence this file cannot afford.
+TOLERANT_REPAIR_CATEGORIES = (
+    "list-shape",
+    "field-repeat",
+    "tag-quote",
+    "name-quote",
+    "name-normalized",
+    "version",
+)
+
+#: Number of relaxations Appendix C.2 defines. Guarded for the same reason.
+TOLERANT_RELAXATION_COUNT = 7
+
 
 def _tolerant_correction(
     corrections: list[Correction],
@@ -400,6 +419,40 @@ def _tolerant_correction(
             after=after,
         )
     )
+
+
+def _quoted_key_span(line: str) -> tuple[int, int] | None:
+    """Span of a quoted key, when a field line quotes one (Appendix C.2.7).
+
+    The span covers the two quotes. A line only qualifies when a ``:`` or ``=``
+    follows the closing quote, apart from optional whitespace, which is what
+    keeps the two line kinds apart: a line whose tokens are only quoted strings
+    is a continuation of the preceding string field (specification 6.1), and a
+    colon *inside* a quoted string stays payload rather than becoming a
+    separator.
+    """
+    start = len(line) - len(line.lstrip())
+    text = line[start:]
+    if not text or text[0] not in "\"'":
+        return None
+    quote = text[0]
+    escaped = False
+    index = 1
+    while index < len(text):
+        char = text[index]
+        if escaped:
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif char == quote:
+            break
+        index += 1
+    else:
+        return None
+    remainder = text[index + 1 :].lstrip()
+    if not remainder or remainder[0] not in "=:":
+        return None
+    return start, start + index + 1
 
 
 def _tolerant_tag(text: str, key: str, line: int, corrections: list[Correction]) -> str:
@@ -1029,7 +1082,13 @@ def parse(
             last_container = None
             last_key = None
             continue
-        if last_container is not None and last_key is not None:
+        # Appendix C.2.7 is decided before the continuation rules: a line whose
+        # first token is a quoted string is otherwise a string continuation, so
+        # the two readings have to be told apart by what follows the closing
+        # quote.
+        quoted_key = _quoted_key_span(line) if tolerant else None
+
+        if quoted_key is None and last_container is not None and last_key is not None:
             stripped = line.strip()
             if last_key in STRING_KEYS and _starts_quote(stripped):
                 with _located(idx, raw):
@@ -1052,6 +1111,20 @@ def parse(
                     line=idx,
                     text=raw,
                 )
+
+        if tolerant and quoted_key is not None:
+            start, end = quoted_key
+            before = line[start:end]
+            bare = line[start + 1 : end - 1]
+            _tolerant_correction(
+                collected,
+                idx,
+                "name-quote",
+                "removed the quotes around a key",
+                before=before,
+                after=bare,
+            )
+            line = f"{line[:start]}{bare}{line[end:]}"
 
         with _located(idx, raw):
             key, value_text = _parse_field_line(line)

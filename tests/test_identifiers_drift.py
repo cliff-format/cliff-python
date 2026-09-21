@@ -31,6 +31,8 @@ requires_spec = pytest.mark.skipif(
 )
 
 NAME_CHAR_RE = re.compile(r"^name-char\s*=\s*(?P<rhs>[^\r\n;]+)", re.M)
+#: ``Diagnostic: category `x`` - the line Appendix C.2 gives each relaxation.
+DIAGNOSTIC_CATEGORY_RE = re.compile(r"^ +Diagnostic: category `(?P<name>[a-z-]+)`", re.M)
 TAGGED_BLOCK_RE = re.compile(
     r"^```[A-Za-z0-9_-]*[ \t]*\r?\n(?P<body>.*?)^```[ \t]*$"
     r"(?=\s*<!--\s*check:\s*(?P<marker>[a-z-]+)\s*-->)",
@@ -152,6 +154,35 @@ def test_examples_of_the_current_version_are_present() -> None:
             if issue.category not in ("warning", "extension")
         ]
         assert errors == [], [i.message for i in errors]
+
+
+@requires_spec
+def test_repair_categories_match_appendix_c() -> None:
+    """The categories Appendix C.2 names are the ones the parser can report.
+
+    A relaxation is only usable if the repair that implements it is reported under
+    the category the specification attaches to it: a pipeline keys its handling on
+    the category. The appendix states one ``Diagnostic: category`` line per
+    relaxation, so the two lists are comparable as written, and a relaxation added
+    to the specification without a matching implementation fails here rather than
+    in a downstream consumer.
+
+    The categories are deliberately fewer than the relaxations: C.2.4 and C.2.7 are
+    both a quoted name and share ``name-quote``.
+    """
+    from cliff_format.parser import TOLERANT_RELAXATION_COUNT, TOLERANT_REPAIR_CATEGORIES
+
+    text = SPEC.read_text(encoding="utf-8")
+    named = DIAGNOSTIC_CATEGORY_RE.findall(text)
+    assert len(named) == TOLERANT_RELAXATION_COUNT, (
+        f"Appendix C.2 states {len(named)} diagnostics but the implementation "
+        f"expects {TOLERANT_RELAXATION_COUNT} relaxations; a new relaxation needs a "
+        f"diagnostic line and an implementation"
+    )
+    assert set(named) == set(TOLERANT_REPAIR_CATEGORIES), (
+        f"specification names {sorted(set(named))}, "
+        f"implementation emits {sorted(TOLERANT_REPAIR_CATEGORIES)}"
+    )
 
 
 def test_repository_paths_exist() -> None:

@@ -1,6 +1,6 @@
 """Tolerant parsing (specification Appendix C).
 
-The six permitted relaxations, the repairs that are forbidden, and the two
+The seven permitted relaxations, the repairs that are forbidden, and the two
 invariants that make the mode usable in a pipeline:
 
 * every repair is reported (an unreported repair is data loss), and
@@ -337,6 +337,75 @@ def test_missing_version_line_is_reported_not_guessed() -> None:
     assert parsed.spec_version == "1.1"
     assert "version" in categories(corrections)
     assert corrections[0].line == 0
+
+
+# --- C.2.7 a quoted key -----------------------------------------------------
+
+
+@pytest.mark.parametrize("marker", ['"context"', "'context'"])
+def test_quoted_key_is_unquoted(marker: str) -> None:
+    text = document(f'{marker}: "Toolbar button."\n')
+    assert_strict_rejects(text)
+    parsed, corrections = parse_tolerant(text)
+    assert parsed.groups[0].entries[0].context == "Toolbar button."
+    assert "name-quote" in categories(corrections)
+    assert corrections[0].before == marker
+    assert corrections[0].after == "context"
+
+
+def test_quoted_key_works_with_the_equals_separator() -> None:
+    text = document('"context" = "Toolbar button."\n')
+    assert_strict_rejects(text)
+    parsed, corrections = parse_tolerant(text)
+    assert parsed.groups[0].entries[0].context == "Toolbar button."
+    assert "name-quote" in categories(corrections)
+
+
+def test_quoted_key_is_read_in_header_scope() -> None:
+    text = HEADER.replace(
+        "target-language: zh-CN\n", 'target-language: zh-CN\n"title": "T"\n'
+    ) + "\n[Video]\ntype: label\n\n" + ENTRY
+    assert_strict_rejects(text)
+    parsed, corrections = parse_tolerant(text)
+    assert parsed.header.title == "T"
+    assert "name-quote" in categories(corrections)
+
+
+def test_quoted_key_is_read_in_group_scope() -> None:
+    text = HEADER + '\n[Video]\ntype: label\n"context": "Group context."\n\n' + ENTRY
+    assert_strict_rejects(text)
+    parsed, corrections = parse_tolerant(text)
+    assert parsed.groups[0].context == "Group context."
+    assert "name-quote" in categories(corrections)
+
+
+def test_quoted_key_does_not_widen_the_key_sets() -> None:
+    """The repair removes quotes; it never legalizes a word (C.5)."""
+    with pytest.raises(CliffParseError, match="unknown entry key 'translater'"):
+        parse(document('"translater": "x"\n'), tolerant=True)
+
+
+def test_quoted_key_does_not_move_a_key_into_another_scope() -> None:
+    """`status` is entry-only, and quoting it does not change that."""
+    text = HEADER + '\n[Video]\ntype: label\n"status": translated\n\n' + ENTRY
+    with pytest.raises(CliffParseError, match="unknown group key 'status'"):
+        parse(text, tolerant=True)
+
+
+def test_quoted_key_is_not_escape_processed() -> None:
+    """The enclosed text must be a name, so a parser never guesses where it ends."""
+    with pytest.raises(CliffParseError, match="invalid field name"):
+        parse(document('"con\\ttext": "x"\n'), tolerant=True)
+
+
+def test_quoted_key_does_not_steal_a_continuation_line() -> None:
+    """A line of quoted strings continues the value; only a separator makes it a key."""
+    text = document('context: "a"\n  "b: c"\n')
+    parsed = parse(text)
+    assert parsed.groups[0].entries[0].context == "ab: c"
+    tolerant, corrections = parse_tolerant(text)
+    assert tolerant.groups[0].entries[0].context == "ab: c"
+    assert categories(corrections) == []
 
 
 # --- C.5 repairs that are forbidden ----------------------------------------

@@ -26,25 +26,55 @@ from cliff_format.errors import CliffParseError
 
 ADVISORY = ("warning", "extension", "correction", "style")
 
+#: The categories a refusal under Appendix C.5 can carry. See
+#: `test_unrepairable_tolerant_fixture_is_refused` for why this is a set.
+C5_REFUSAL_CATEGORIES = frozenset({"vocabulary", "semantic", "id", "syntax"})
+
 
 def _fixtures(name: str) -> list[Path]:
     return require_sibling(CLIFF_TEST_FIXTURES / name, f"cliff-test/{name}")
 
 
-#: A tolerant fixture whose whole point is that it must be *refused*
+#: Tolerant fixtures whose whole point is that they must be *refused*
 #: (specification Appendix C.5): tolerant parsing repairs shape, never content.
-UNREPAIRABLE = "unrepairable.zh-CN.cliff"
+#: The list is duplicated in ``cliff-test/tests/run_all.py``, which splits the
+#: same directory into "repairable" and "refused" for the validator suite, and
+#: ``test_unrepairable_list_matches_the_conformance_suite`` below fails if the two
+#: ever disagree - a fixture that one repository classifies as refusable and the
+#: other as repairable is tested by neither.
+UNREPAIRABLE = frozenset({"unrepairable.zh-CN.cliff", "quoted-unknown-key.zh-CN.cliff"})
 
 VALID_PATHS = _fixtures("valid")
 INVALID_PATHS = _fixtures("invalid")
 LAYOUT_PATHS = _fixtures("layout")
 TOLERANT_PATHS = [
-    path for path in _fixtures("tolerant") if path.name != UNREPAIRABLE
+    path for path in _fixtures("tolerant") if path.name not in UNREPAIRABLE
 ]
 UNREPAIRABLE_PATHS = [
-    path for path in _fixtures("tolerant") if path.name == UNREPAIRABLE
+    path for path in _fixtures("tolerant") if path.name in UNREPAIRABLE
 ]
 STYLE_PATHS = _fixtures("style")
+
+
+def test_unrepairable_list_matches_the_conformance_suite() -> None:
+    """The two repositories must classify the tolerant fixtures the same way."""
+    import re
+
+    from conftest import WORKSPACE_ROOT
+
+    run_all = WORKSPACE_ROOT / "cliff-test" / "tests" / "run_all.py"
+    if not run_all.is_file():
+        pytest.skip("cliff-test checkout is not available")
+    match = re.search(
+        r"^UNREPAIRABLE\s*=\s*\{(?P<body>[^}]*)\}", run_all.read_text(encoding="utf-8"), re.M
+    )
+    assert match is not None, "cliff-test/tests/run_all.py no longer defines UNREPAIRABLE"
+    theirs = set(re.findall(r'"([^"]+)"', match.group("body")))
+    assert theirs == set(UNREPAIRABLE), (
+        f"cliff-test refuses {sorted(theirs)} but this suite refuses "
+        f"{sorted(UNREPAIRABLE)}; a fixture in neither list is tested as repairable "
+        "by whichever repository forgot it"
+    )
 
 
 def _errors(issues) -> list:
@@ -110,11 +140,21 @@ def test_tolerant_fixtures_are_repaired_into_valid_documents(path: Path) -> None
 @pytest.mark.skipif(not UNREPAIRABLE_PATHS, reason="cliff-test checkout is not available")
 @pytest.mark.parametrize("path", UNREPAIRABLE_PATHS, ids=lambda p: p.name)
 def test_unrepairable_tolerant_fixture_is_refused(path: Path) -> None:
-    """Appendix C.5: a tolerant parser must not guess missing content."""
+    """Appendix C.5: a tolerant parser must not guess missing content.
+
+    The refusal's *category* is not asserted to be one particular value, because
+    C.5 lists several distinct refusals and the parser reports each under the
+    category naming the rule it broke: `vocabulary` for a value outside a closed
+    set, `semantic` for an unknown key or a missing field, `id` for a malformed
+    section path. What the test does assert is that tolerant mode *refuses* rather
+    than returning a document, and that it refuses under one of those categories
+    with a line number - an unrepairable fixture that starts parsing is the
+    failure this exists to catch.
+    """
     text = path.read_text(encoding="utf-8")
     with pytest.raises(CliffParseError) as excinfo:
         parse(text, path=path, tolerant=True)
-    assert excinfo.value.category == "vocabulary", excinfo.value.message
+    assert excinfo.value.category in C5_REFUSAL_CATEGORIES, excinfo.value.message
     assert excinfo.value.line > 0
 
 

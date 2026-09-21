@@ -80,7 +80,7 @@ everything it accepts:
 - resource limits (documented and configurable) are enforced.
 
 **Tolerant** (`parse(..., tolerant=True)`, `parse_tolerant`) additionally applies
-the six relaxations of specification Appendix C and reports every repair:
+the seven relaxations of specification Appendix C and reports every repair:
 
 | Relaxation | Input | Result |
 | --- | --- | --- |
@@ -90,6 +90,13 @@ the six relaxations of specification Appendix C and reports every repair:
 | C.2.4 quoted entry id | `<"resolution">` | `resolution` |
 | C.2.5 identifier with a reserved character | `<Save & Load>` | `Save-Load` (+ collision handling) |
 | C.2.6 version-line spelling | `cliff 1.1.0` | `CLIFF 1.1` |
+| C.2.7 quoted key | `"context": "…"` | `context: "…"` |
+
+C.2.7 removes the quotes and nothing else: the enclosed text must be a `name`, no
+escape is processed, and the key is then checked against the legal keys of its
+scope exactly as a bare key is. A quoted word that is not a legal key, or a key
+quoted in a scope that does not allow it, is still an error (§C.5) — the
+relaxation cannot legalize a word.
 
 Every repair is recorded, so nothing is fixed silently:
 
@@ -100,7 +107,9 @@ for c in corrections:
 ```
 
 Categories: `list-shape`, `field-repeat`, `tag-quote`, `name-quote`,
-`name-normalized`, `id-collision`, `version`, `casing`.
+`name-normalized`, `id-collision`, `version`, `casing`. A category names the
+operation, not the clause, so `name-quote` covers both a quoted entry id (C.2.4)
+and a quoted key (C.2.7).
 
 And the mode never guesses. Appendix C.5 lists what a tolerant parser MUST
 refuse — a missing required field, a word outside a closed vocabulary, an
