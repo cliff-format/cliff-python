@@ -87,11 +87,6 @@ def _errors(issues) -> list:
     return [issue for issue in issues if issue.category not in ADVISORY]
 
 
-def _skip_or_fail(paths: list[Path], name: str) -> None:
-    if not paths:
-        pytest.skip(f"sibling checkout {name} is not available")
-
-
 @pytest.mark.skipif(not VALID_PATHS, reason="cliff-test checkout is not available")
 @pytest.mark.parametrize("path", VALID_PATHS, ids=lambda p: p.name)
 def test_valid_fixtures_are_accepted(path: Path) -> None:
