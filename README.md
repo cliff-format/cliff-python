@@ -98,6 +98,16 @@ scope exactly as a bare key is. A quoted word that is not a legal key, or a key
 quoted in a scope that does not allow it, is still an error (§C.5) — the
 relaxation cannot legalize a word.
 
+C.2.5 applies to an identifier that **begins with a name character** (ignoring
+surrounding whitespace), or that uses the quoted form of C.2.4. Angle brackets that
+enclose anything else are not an entry marker: a stray closing tag `</terms>` — what
+a model writes when it treats a section like an XML element — or `<.hidden>` is
+rejected under C.5 rather than normalized. Without that limit the reading turned
+`/terms` into the entry `terms` (C.3 step 4 replaces the slash, step 6 strips it) and
+then failed the document on a required field of an entry the file never contained,
+which is the guessing C.5 forbids. An identifier that is empty or whitespace-only is
+unchanged: C.3 step 7 still gives the scope's fallback name.
+
 Every repair is recorded, so nothing is fixed silently:
 
 ```python

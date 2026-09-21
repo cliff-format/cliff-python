@@ -233,6 +233,46 @@ def test_namespace_and_clan_are_left_alone_when_valid() -> None:
 # --- C.4 collisions ---------------------------------------------------------
 
 
+def test_markup_is_not_an_entry_marker_and_is_not_normalized_into_one() -> None:
+    """Specification C.2.5 applies to an identifier, and a closing tag is not one.
+
+    Without the guard the tolerant reading normalized ``/terms`` into ``terms``
+    (C.3 step 4 replaces the slash, step 6 strips it), so a stray closing tag became
+    an entry with no fields and the document then failed on that entry's required
+    fields - an entry the answer never contained, which is the guessing C.5 forbids.
+    """
+    for markup in ("</terms>", "<.hidden>"):
+        text = document("", entry=ENTRY) + f"\n{markup}\n"
+        try:
+            parse_tolerant(text)
+        except Exception as exc:  # noqa: BLE001 - the assertion is on the message
+            assert "key: value" in str(exc), exc
+        else:
+            raise AssertionError(f"{markup} was read as an entry marker")
+
+
+def test_markup_is_not_a_section() -> None:
+    text = document("", group="[/terms]")
+    try:
+        parse_tolerant(text)
+    except Exception as exc:  # noqa: BLE001
+        assert "key: value" in str(exc), exc
+    else:
+        raise AssertionError("a closing tag was read as a section line")
+
+
+def test_an_identifier_relaxation_still_accepts_leading_whitespace() -> None:
+    """The guard must not narrow C.2.5: C.3 strips surrounding whitespace (step 2)."""
+    text = document("", entry="<  resolution  >" + '\nsource: "S"\nstatus: initial\n')
+    assert_strict_rejects(text)
+    parsed, corrections = parse_tolerant(text)
+    assert parsed.groups[0].entries[0].id == "resolution"
+    assert "name-normalized" in categories(corrections)
+
+
+# --- C.4 collisions ---------------------------------------------------------
+
+
 def duplicate_id_document() -> str:
     """A document with two entries that spell the same id.
 

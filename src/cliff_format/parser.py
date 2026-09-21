@@ -103,6 +103,34 @@ class Limits(TypedDict, total=False):
     max_string_length: int
 
 
+def _marker_begins_with_identifier(content: str) -> bool:
+    """Whether angle-bracket content is an identifier rather than markup.
+
+    Specification C.2.5's relaxations apply to an identifier that **begins** with
+    a name character, ignoring surrounding whitespace, or that uses the quoted
+    form of C.2.4. Anything else between the brackets - a stray closing tag
+    ``</terms>``, or ``<.hidden>`` - is not an entry marker: C.5 rejects the line
+    instead. Without this test the tolerant reading normalized ``/terms`` into
+    ``terms`` (C.3 step 4 replaces the slash, step 6 strips it) and then failed the
+    document on a required field of an entry the answer never contained, which is
+    the guessing C.5 forbids.
+    """
+    text = content.strip()
+    if not text:
+        # Empty or whitespace-only: C.3 step 7 gives the scope's fallback name, so
+        # this is still an identifier (an empty name is an error in strict mode, but
+        # the tolerant reading has a documented answer for it).
+        return True
+    if _starts_quote(text):
+        return True
+    return is_name(text[0])
+
+
+def _path_begins_with_identifier(content: str) -> bool:
+    """The same test for the first segment of a group path (specification C.2.5)."""
+    return _marker_begins_with_identifier(content)
+
+
 def _normalize_lines(text: str) -> list[str]:
     if text.startswith("\ufeff"):
         text = text[1:]
@@ -936,6 +964,19 @@ def parse(
                 continue
 
         section = SECTION_RE.match(line)
+        if section and tolerant and not _path_begins_with_identifier(section.group(1)):
+            # Not a section line at all (specification C.2.5): C.5 rejects it with a
+            # located error rather than a group being manufactured out of markup. The
+            # line is reported as what it is - neither a field, a section nor an entry
+            # marker - instead of being handed to the continuation handling, whose
+            # "continuation line does not match the previous field's type" would name
+            # a problem the document does not have.
+            raise CliffParseError(
+                "expected 'key: value' or 'key = value' field",
+                line=idx,
+                category="syntax",
+                text=raw,
+            )
         if section:
             group_path = section.group(1).strip()
             if tolerant:
@@ -1002,6 +1043,10 @@ def parse(
                 )
 
         entry = ENTRY_RE.match(line)
+        if entry and tolerant and not _marker_begins_with_identifier(entry.group(1)):
+            # Markup is not an entry marker (specification C.2.5): fall through to the
+            # C.5 error instead of normalizing the tag name into an entry id.
+            entry = None
         if entry:
             if current_group is None:
                 raise CliffParseError(

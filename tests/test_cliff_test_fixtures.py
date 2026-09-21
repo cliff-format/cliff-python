@@ -42,7 +42,13 @@ def _fixtures(name: str) -> list[Path]:
 #: ``test_unrepairable_list_matches_the_conformance_suite`` below fails if the two
 #: ever disagree - a fixture that one repository classifies as refusable and the
 #: other as repairable is tested by neither.
-UNREPAIRABLE = frozenset({"unrepairable.zh-CN.cliff", "quoted-unknown-key.zh-CN.cliff"})
+UNREPAIRABLE = frozenset(
+    {
+        "unrepairable.zh-CN.cliff",
+        "quoted-unknown-key.zh-CN.cliff",
+        "closing-tag.zh-CN.cliff",
+    }
+)
 
 VALID_PATHS = _fixtures("valid")
 INVALID_PATHS = _fixtures("invalid")
