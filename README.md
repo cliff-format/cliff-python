@@ -140,25 +140,25 @@ assert cliff_format.serialize(cliff_format.parse(once)) == once
 ## Command line
 
 ```bash
-cliff_format parse path/to/file.cliff
-cliff_format serialize path/to/file.cliff
-cliff_format validate path/to/file.cliff
-cliff_format convert path/to/file.cliff --format po
-cliff_format convert path/to/file.po --from po --format cliff
+cliff-format parse path/to/file.cliff
+cliff-format serialize path/to/file.cliff
+cliff-format validate path/to/file.cliff
+cliff-format convert path/to/file.cliff --format po
+cliff-format convert path/to/file.po --from po --format cliff
 
 # Tolerant reading of a model's output, with the repair report on stderr
-cliff_format parse path/to/model-output.cliff --tolerant
-cliff_format validate path/to/model-output.cliff --tolerant
-cliff_format convert path/to/model-output.cliff --tolerant --format json
+cliff-format parse path/to/model-output.cliff --tolerant
+cliff-format validate path/to/model-output.cliff --tolerant
+cliff-format convert path/to/model-output.cliff --tolerant --format json
 
 # Opt-in checks: a layout mismatch as an error, style deviations as warnings
-cliff_format validate path/to/file.cliff --check-layout
-cliff_format validate path/to/file.cliff --style
-cliff_format validate path/to/file.cliff --check-width
+cliff-format validate path/to/file.cliff --check-layout
+cliff-format validate path/to/file.cliff --style
+cliff-format validate path/to/file.cliff --check-width
 
 # Canonical output for a specific version, or with a canonical id style applied
-cliff_format serialize path/to/file.cliff --spec-version 1.0
-cliff_format serialize path/to/file.cliff --style
+cliff-format serialize path/to/file.cliff --spec-version 1.0
+cliff-format serialize path/to/file.cliff --style
 ```
 
 Supported convert formats: `cliff`, `json`, `yaml`, `csv`, `po`, `xliff`, `fluent`, `android`, `ios`.

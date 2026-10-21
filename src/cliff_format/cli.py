@@ -188,7 +188,7 @@ def _cmd_convert(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="cliff_format",
+        prog="cliff-format",
         description="CLIFF 1.0 / 1.1 Python parser, serializer, validator and converter",
         epilog=(
             "Strict parsing is the default: anything the specification rejects is an "
