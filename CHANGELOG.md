@@ -49,3 +49,23 @@ First public release.
   `python -m twine check --strict dist/*`.
 - Run the test suite with `pytest`, and the example check with
   `python tools/regenerate_examples.py --check`.
+
+---
+
+## 0.1.0 — 2026-09-03 (unreleased)
+
+Initial implementation, developed as `pyclif` and never published to PyPI.
+
+### Added
+
+- Added the reference parser, serializer and validator for CLIFF 1.0.
+- Added bidirectional converters for JSON, YAML, CSV, gettext PO, XLIFF, Fluent, Android
+  `strings.xml` and iOS `Localizable.strings`, each shipping conversion samples in both
+  directions.
+- Added the command line entry point, the API overview and the metadata channel documentation.
+
+### Notes
+
+- The distribution and import names (`pyclif`) changed before the first release; 0.2.0 is the
+  first version published under `cliff-python` / `cliff_format`.
+- Tolerant parsing, resource limits and CLIFF 1.1 support arrived in 0.2.0.
