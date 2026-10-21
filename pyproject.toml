@@ -69,3 +69,4 @@ no_implicit_optional = true
 [project.urls]
 Repository = "https://github.com/cliff-format/cliff-python"
 Issues = "https://github.com/cliff-format/cliff-python/issues"
+Changelog = "https://github.com/cliff-format/cliff-python/blob/main/CHANGELOG.md"
