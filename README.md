@@ -1,24 +1,20 @@
-<div align="center">
+<h1 align="center">CLIFF for Python</h1>
+
+<p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/cliff-format/cliff-python/main/docs/assets/cliff-wordmark-dark.svg">
     <img alt="CLIFF — the Contextual Localization Integrated File Format"
          src="https://raw.githubusercontent.com/cliff-format/cliff-python/main/docs/assets/cliff-wordmark-light.svg"
          width="420">
   </picture>
+</p>
 
-  <h3>cliff-python</h3>
-
-  <p>Python parser, serializer, validator and converter for
-  <a href="https://github.com/cliff-format/cliff">CLIFF 1.0 / 1.1</a> —
-  the Contextual Localization Integrated File Format.</p>
-
-  <p>
-    <a href="https://pypi.org/project/cliff-python/"><img alt="PyPI" src="https://img.shields.io/pypi/v/cliff-python"></a>
-    <a href="https://pypi.org/project/cliff-python/"><img alt="Python versions" src="https://img.shields.io/pypi/pyversions/cliff-python"></a>
-    <a href="https://pypi.org/project/cliff-python/"><img alt="License" src="https://img.shields.io/pypi/l/cliff-python"></a>
-    <a href="https://github.com/cliff-format/cliff/blob/main/spec/cliff-1.1.0.md"><img alt="CLIFF 1.0 | 1.1" src="https://img.shields.io/badge/CLIFF-1.0%20%7C%201.1-2ea043"></a>
-  </p>
-</div>
+<p align="center">
+  <a href="https://pypi.org/project/cliff-python/"><img alt="PyPI" src="https://img.shields.io/pypi/v/cliff-python"></a>
+  <a href="https://pypi.org/project/cliff-python/"><img alt="Python versions" src="https://img.shields.io/pypi/pyversions/cliff-python"></a>
+  <a href="https://pypi.org/project/cliff-python/"><img alt="License" src="https://img.shields.io/pypi/l/cliff-python"></a>
+  <a href="https://github.com/cliff-format/cliff/blob/main/spec/cliff-1.1.0.md"><img alt="CLIFF 1.0 | 1.1" src="https://img.shields.io/badge/CLIFF-1.0%20%7C%201.1-2ea043"></a>
+</p>
 
 ---
 
