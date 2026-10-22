@@ -306,6 +306,8 @@ converter, and `python tools/regenerate_examples.py --check` verifies the sample
 - [CLIFF specification](https://github.com/cliff-format/cliff/blob/main/spec/cliff-1.1.0.md)
 - [Conformance fixtures](https://github.com/cliff-format/cliff-test)
 - [Changelog](CHANGELOG.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security](SECURITY.md)
 - [Issues](https://github.com/cliff-format/cliff-python/issues)
 
 ## License
