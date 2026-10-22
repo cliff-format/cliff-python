@@ -36,7 +36,10 @@ The test suite covers the normative CLIFF 1.0 and 1.1 examples and the `cliff-te
 - The `[AI]` prefix is required for AI-generated or automated commits.
 - Keep commit subjects at 72 characters or fewer and do not end them with a period.
 - Use English for commit messages, branch names, pull request titles, tags and `CHANGELOG.md`.
-- Keep `main` linear: squash or rebase pull requests; do not add merge commits.
+- `main` is the release branch; `dev` is the integration branch.
+- Create work branches from `dev` and target `dev` with pull requests.
+- Release pull requests merge `dev` into `main` with a merge commit; `main` is not linear.
+- See [docs/version-control.md](docs/version-control.md).
 - Run the checks above before opening a pull request.
 
 ## Release
@@ -45,8 +48,9 @@ The test suite covers the normative CLIFF 1.0 and 1.1 examples and the `cliff-te
 2. Update the English `CHANGELOG.md`.
 3. Run the checks and build the distributions.
 4. Commit with `[AI] build(release): prepare vX.Y.Z`.
-5. Tag the release with an annotated `vX.Y.Z` tag.
-6. Publish a GitHub Release; the publish workflow uploads to PyPI with trusted publishing.
+5. Open a release pull request from `dev` to `main` and merge it with a merge commit.
+6. Tag `main` with an annotated `vX.Y.Z` tag.
+7. Publish a GitHub Release; the publish workflow uploads to PyPI with trusted publishing.
 
 ## Scope
 
